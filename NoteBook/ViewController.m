@@ -8,22 +8,75 @@
 
 #import "ViewController.h"
 
-@interface ViewController ()
+#import <AVOSCloud/AVOSCloud.h>
+#import "HomeTableViewCell.h"
+#import "UpdateViewController.h"
+
+@interface ViewController () <UITableViewDelegate,UITableViewDataSource>
+
+@property (weak, nonatomic) IBOutlet UITableView *tableview;
+@property (nonatomic,strong) NSMutableArray *dataArray;
 
 @end
 
 @implementation ViewController
 
+- (void)viewWillAppear:(BOOL)animated{
+    [super viewWillAppear:animated];
+    [self loadData];
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
-    // Do any additional setup after loading the view, typically from a nib.
+    
+    self.dataArray = [NSMutableArray array];
+    
+    self.tableview.delegate = self;
+    self.tableview.dataSource = self;
+    
 }
 
-
-- (void)didReceiveMemoryWarning {
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
+// 从云端获取数据
+- (void)loadData{
+    
+    // 导入SDK
+    // 实例化查询类
+    AVQuery *query = [AVQuery queryWithClassName:@"TodoFolder"];
+    // 设置查询条件
+    // 执行查询
+    [query findObjectsInBackgroundWithBlock:^(NSArray * _Nullable objects, NSError * _Nullable error) {
+        
+        [self.dataArray removeAllObjects];
+        [self.dataArray addObjectsFromArray:objects];
+        [self.tableview reloadData];
+//        AVObject *item =objects[0];
+//        NSLog(@"%@",[item objectForKey:@"content"]);
+        
+    }];
 }
 
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    return self.dataArray.count;
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    
+    AVObject *item = self.dataArray[indexPath.row];
+    HomeTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell"];
+    cell.item = item;
+    cell.textLabel.text = [item objectForKey:@"content"];
+    
+    return cell;
+    
+}
+
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender{
+    if ([segue.identifier isEqualToString:@"update"]) {
+        
+        HomeTableViewCell *cell = sender;
+        UpdateViewController *upVc = segue.destinationViewController;
+        upVc.item = cell.item;
+    }
+}
 
 @end
